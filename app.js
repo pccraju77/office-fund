@@ -88,7 +88,8 @@ const els = {
     noRepaymentsMessage: document.getElementById('noRepaymentsMessage'),
     addMemberSection: document.getElementById('addMemberSection'),
     addMemberForm: document.getElementById('addMemberForm'),
-    newMemberName: document.getElementById('newMemberName')
+    newMemberName: document.getElementById('newMemberName'),
+    newMemberEmail: document.getElementById('newMemberEmail')
 };
 
 const AUTH_PASSWORD = "2026";
@@ -157,10 +158,12 @@ const initializeApp = async () => {
         document.getElementById('adminDashboardRow').classList.add('hidden');
         document.getElementById('clearDataBtn').classList.add('hidden');
         els.addMemberSection.classList.add('hidden');
+        document.getElementById('remindBtn').classList.add('hidden');
     } else {
         document.getElementById('adminDashboardRow').classList.remove('hidden');
         document.getElementById('clearDataBtn').classList.remove('hidden');
         els.addMemberSection.classList.remove('hidden');
+        document.getElementById('remindBtn').classList.remove('hidden');
     }
     
     switchTab('dashboard');
@@ -211,6 +214,9 @@ const fetchAndSyncCloud = async () => {
             // Backwards compatibility for older cloud data
             if (!cloudData.members) {
                 cloudData.members = [...DEFAULT_MEMBERS];
+            }
+            if (!cloudData.memberEmails) {
+                cloudData.memberEmails = {};
             }
 
             // If cloud data is different from local data (another user updated it)
@@ -290,14 +296,25 @@ const renderContributionList = () => {
 
     appData.members.forEach(member => {
         const isPaid = paidMembers.includes(member);
-        
+        const email = (appData.memberEmails && appData.memberEmails[member]) ? appData.memberEmails[member] : '';
+        const emailDisplay = email ? `<div class="text-xs text-gray-400 font-normal mt-0.5">${email}</div>` : '';
+        const editEmailBtn = currentRole === 'admin' ? 
+            `<button onclick="editEmail('${member}')" class="ml-2 text-gray-300 hover:text-indigo-600 shrink-0" title="Edit Email">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+            </button>` : '';
+
         const tr = document.createElement('tr');
         tr.className = 'text-sm border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors';
         
         tr.innerHTML = `
-            <td class="py-3 pl-2 whitespace-nowrap flex items-center gap-2">
-                ${currentRole === 'admin' ? `<button onclick="removeMember('${member}')" class="text-red-400 hover:text-red-600 focus:outline-none" title="Remove Member"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>` : ''}
-                <span class="font-medium ${isPaid ? 'text-gray-900' : 'text-gray-600'}">${member}</span>
+            <td class="py-3 pl-2 whitespace-nowrap">
+                <div class="flex items-center">
+                    ${currentRole === 'admin' ? `<button onclick="removeMember('${member}')" class="text-red-400 hover:text-red-600 focus:outline-none mr-2" title="Remove Member"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>` : ''}
+                    <div class="flex flex-col">
+                        <span class="font-medium ${isPaid ? 'text-gray-900' : 'text-gray-600'} flex items-center">${member}${editEmailBtn}</span>
+                        ${emailDisplay}
+                    </div>
+                </div>
             </td>
             <td class="py-3 whitespace-nowrap text-center">
                 <input type="checkbox" class="member-checkbox mx-auto" data-member="${member}" ${isPaid ? 'checked' : ''} ${currentRole === 'viewer' ? 'disabled' : ''}>
@@ -314,16 +331,16 @@ const renderContributionList = () => {
             const isChecked = e.target.checked;
             toggleContribution(member, selectedMonth, isChecked);
             
-            // Update row UI instantly without losing focus
-            const nameSpan = tr.querySelector('td:first-child span');
+            // Update row UI instantly
+            const nameSpan = tr.querySelector('.font-medium');
             const amountSpan = tr.querySelector('td:last-child span');
             
             if (isChecked) {
-                nameSpan.className = 'font-medium text-gray-900';
+                nameSpan.className = 'font-medium text-gray-900 flex items-center';
                 amountSpan.className = 'font-bold text-green-600';
                 amountSpan.textContent = '₹' + CONTRIBUTION_AMOUNT.toLocaleString();
             } else {
-                nameSpan.className = 'font-medium text-gray-600';
+                nameSpan.className = 'font-medium text-gray-600 flex items-center';
                 amountSpan.className = 'font-bold text-gray-400';
                 amountSpan.textContent = '₹0';
             }
@@ -349,6 +366,8 @@ const toggleContribution = (member, month, isPaid) => {
 const handleAddMember = (e) => {
     e.preventDefault();
     const name = els.newMemberName.value.trim();
+    const email = els.newMemberEmail.value.trim();
+    
     if (!name) return;
     
     if (appData.members.includes(name)) {
@@ -357,8 +376,14 @@ const handleAddMember = (e) => {
     }
     
     appData.members.push(name);
+    if (email) {
+        if (!appData.memberEmails) appData.memberEmails = {};
+        appData.memberEmails[name] = email;
+    }
+    
     saveData();
     els.newMemberName.value = '';
+    els.newMemberEmail.value = '';
     renderContributionList();
     populateBorrowerSelect();
 };
@@ -370,6 +395,45 @@ window.removeMember = (member) => {
         renderContributionList();
         populateBorrowerSelect();
     }
+};
+
+window.editEmail = async (member) => {
+    const currentEmail = (appData.memberEmails && appData.memberEmails[member]) ? appData.memberEmails[member] : '';
+    const newEmail = prompt(`Enter email address for ${member}:`, currentEmail);
+    if (newEmail !== null) {
+        if (!appData.memberEmails) appData.memberEmails = {};
+        appData.memberEmails[member] = newEmail.trim();
+        await saveData();
+        renderContributionList();
+    }
+};
+
+window.sendReminders = () => {
+    const month = els.contributionMonth.value;
+    const paidMembers = appData.contributions[month] || [];
+    const unpaidMembers = appData.members.filter(m => !paidMembers.includes(m));
+    
+    if (unpaidMembers.length === 0) {
+        alert("All members have paid for this month!");
+        return;
+    }
+    
+    if (!appData.memberEmails) appData.memberEmails = {};
+    
+    const bccList = unpaidMembers
+        .map(m => appData.memberEmails[m])
+        .filter(email => email)
+        .join(',');
+        
+    if (!bccList) {
+        alert("None of the unpaid members have email addresses on file.");
+        return;
+    }
+    
+    const subject = encodeURIComponent(`Reminder: Monthly Contribution Due - ${month}`);
+    const body = encodeURIComponent(`Hello,\n\nThis is a friendly reminder that your monthly contribution (Rs ${CONTRIBUTION_AMOUNT}) for ${month} is currently due.\n\nPlease complete your payment at your earliest convenience.\n\nThank you.`);
+    
+    window.location.href = `mailto:?bcc=${bccList}&subject=${subject}&body=${body}`;
 };
 
 const getAvailableBalance = () => {
@@ -613,7 +677,6 @@ window.switchTab = (tabName) => {
 };
 
 window.downloadPDF = (type) => {
-    // Check if libraries are loaded
     if (!window.jspdf || !window.jspdf.jsPDF) {
         alert("PDF library is still loading, please try again in a moment.");
         return;
@@ -622,7 +685,6 @@ window.downloadPDF = (type) => {
     const doc = new window.jspdf.jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     
-    // Add header
     doc.setFontSize(18);
     doc.text("Onteq Finance Club", pageWidth / 2, 15, { align: 'center' });
     doc.setFontSize(10);

@@ -221,6 +221,10 @@
                 <div class="bg-white px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h2 class="text-lg font-bold text-gray-800">Monthly Contributions Report</h2>
                     <div class="flex items-center gap-3">
+                        <button id="remindBtn" onclick="sendReminders()" class="text-xs bg-yellow-50 text-yellow-600 hover:bg-yellow-100 px-3 py-2 rounded-md transition-colors border border-yellow-200 font-semibold flex items-center gap-1.5 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            Send Reminders
+                        </button>
                         <button onclick="downloadPDF('monthly')" class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-2 rounded-md transition-colors border border-indigo-200 font-semibold flex items-center gap-1.5 shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                             Download PDF
@@ -242,9 +246,10 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="addMemberSection" class="p-4 bg-gray-50/80">
+                <div id="addMemberSection" class="p-4 bg-gray-50/80 border-t border-gray-100">
                     <form id="addMemberForm" class="flex flex-col sm:flex-row gap-3">
                         <input type="text" id="newMemberName" placeholder="Enter new member name..." required class="flex-grow px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700 bg-white text-sm shadow-sm">
+                        <input type="email" id="newMemberEmail" placeholder="Email address (optional)" class="flex-grow px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700 bg-white text-sm shadow-sm">
                         <button type="submit" class="bg-primary hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 whitespace-nowrap">
                             Add Member
                         </button>
