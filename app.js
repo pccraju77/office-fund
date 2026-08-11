@@ -57,8 +57,44 @@ const els = {
     noRepaymentsMessage: document.getElementById('noRepaymentsMessage')
 };
 
+const AUTH_PASSWORD = "1234";
+
 // Initialize Application
 const init = () => {
+    if (!checkAuth()) return;
+    initializeApp();
+};
+
+const checkAuth = () => {
+    const loginOverlay = document.getElementById('login-overlay');
+    const appContainer = document.getElementById('app-container');
+    const loginForm = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginError = document.getElementById('loginError');
+
+    if (sessionStorage.getItem('officeFundAuth') === 'true') {
+        loginOverlay.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        return true;
+    }
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (passwordInput.value === AUTH_PASSWORD) {
+            sessionStorage.setItem('officeFundAuth', 'true');
+            loginOverlay.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            initializeApp();
+        } else {
+            loginError.classList.remove('hidden');
+            passwordInput.value = '';
+        }
+    });
+
+    return false;
+};
+
+const initializeApp = () => {
     // Set current month for contribution
     const today = new Date();
     const yyyy = today.getFullYear();
