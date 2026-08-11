@@ -612,4 +612,113 @@ window.switchTab = (tabName) => {
     document.getElementById(`nav-${tabName}`).classList.add('active');
 };
 
+window.downloadPDF = (type) => {
+    // Check if libraries are loaded
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert("PDF library is still loading, please try again in a moment.");
+        return;
+    }
+    
+    const doc = new window.jspdf.jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    // Add header
+    doc.setFontSize(18);
+    doc.text("Office Micro-Fund", pageWidth / 2, 15, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, 22, { align: 'center' });
+    
+    if (type === 'monthly') {
+        const month = els.contributionMonth.value;
+        const paidMembers = appData.contributions[month] || [];
+        
+        doc.setFontSize(14);
+        doc.text(`Monthly Contributions Report: ${month}`, 14, 35);
+        
+        const tableData = appData.members.map(member => {
+            const isPaid = paidMembers.includes(member);
+            return [
+                member,
+                isPaid ? "PAID" : "UNPAID",
+                isPaid ? `Rs ${CONTRIBUTION_AMOUNT}` : "Rs 0"
+            ];
+        });
+        
+        doc.autoTable({
+            startY: 40,
+            head: [['Member Name', 'Status', 'Amount']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [79, 70, 229] }
+        });
+        
+        doc.save(`Monthly_Report_${month}.pdf`);
+        
+    } else if (type === 'borrow') {
+        doc.setFontSize(14);
+        doc.text(`Borrower Report`, 14, 35);
+        
+        const tableData = appData.loans.map(loan => {
+            const repaidSoFar = (loan.repayments||[]).reduce((sum, r) => sum + r.amount, 0);
+            const remainingDue = loan.totalDue - repaidSoFar;
+            const status = loan.status === 'active' ? 'ACTIVE' : 'SETTLED';
+            const dates = `Out: ${loan.issueDate}\nDue: ${loan.deadline}`;
+            
+            return [
+                loan.borrower,
+                `Rs ${loan.amount}`,
+                `Rs ${loan.interest}`,
+                `Rs ${remainingDue}`,
+                dates,
+                status
+            ];
+        });
+        
+        doc.autoTable({
+            startY: 40,
+            head: [['Borrower', 'Amount', 'Interest', 'Remaining Due', 'Dates', 'Status']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [79, 70, 229] }
+        });
+        
+        doc.save(`Borrow_Report.pdf`);
+        
+    } else if (type === 'repayments') {
+        doc.setFontSize(14);
+        doc.text(`Repayment Installments Report`, 14, 35);
+        
+        let allRepayments = [];
+        appData.loans.forEach(loan => {
+            (loan.repayments||[]).forEach(rep => {
+                allRepayments.push({
+                    ...rep,
+                    borrower: loan.borrower,
+                    loanIssueDate: loan.issueDate
+                });
+            });
+        });
+        allRepayments.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        const tableData = allRepayments.map(rep => {
+            return [
+                rep.date,
+                rep.borrower,
+                `Loan from ${rep.loanIssueDate}`,
+                `Rs ${rep.amount}`
+            ];
+        });
+        
+        doc.autoTable({
+            startY: 40,
+            head: [['Date', 'Borrower', 'Loan Details', 'Amount Repaid']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [79, 70, 229] }
+        });
+        
+        doc.save(`Repayments_Report.pdf`);
+    }
+};
+
 document.addEventListener('DOMContentLoaded', init);
