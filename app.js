@@ -208,6 +208,11 @@ const fetchAndSyncCloud = async () => {
                 return;
             }
             
+            // Backwards compatibility for older cloud data
+            if (!cloudData.members) {
+                cloudData.members = [...DEFAULT_MEMBERS];
+            }
+
             // If cloud data is different from local data (another user updated it)
             if (JSON.stringify(cloudData) !== JSON.stringify(appData)) {
                 console.log("Cloud update detected, syncing UI...");
