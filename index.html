@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Office Micro-Fund Manager</title>
+    <!-- Tailwind CSS (v3.4 CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#10b981',
+                        dark: '#0f172a',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .nav-btn.active {
+            border-color: #4f46e5;
+            color: #ffffff;
+        }
+        .nav-btn:not(.active) {
+            border-color: transparent;
+            color: #94a3b8;
+        }
+        .nav-btn:not(.active):hover {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+    <!-- Header with Navigation -->
+    <header class="bg-dark text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center border-b border-gray-700">
+            <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <svg class="w-8 h-8 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Office Micro-Fund
+            </h1>
+            <div class="flex items-center gap-4">
+                <div class="text-sm font-medium text-gray-300 hidden sm:block">Manage office contributions and loans seamlessly</div>
+                <button onclick="clearCache()" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors border border-red-500/30 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Clear Data
+                </button>
+            </div>
+        </div>
+        <div class="container mx-auto px-6 flex gap-8 pt-4 text-sm font-medium overflow-x-auto">
+            <button id="nav-dashboard" class="nav-btn active pb-3 border-b-2 transition-colors whitespace-nowrap" onclick="switchTab('dashboard')">Dashboard</button>
+            <button id="nav-monthly" class="nav-btn pb-3 border-b-2 transition-colors whitespace-nowrap" onclick="switchTab('monthly')">Monthly Report</button>
+            <button id="nav-borrow" class="nav-btn pb-3 border-b-2 transition-colors whitespace-nowrap" onclick="switchTab('borrow')">Borrow Report</button>
+            <button id="nav-repayments" class="nav-btn pb-3 border-b-2 transition-colors whitespace-nowrap" onclick="switchTab('repayments')">Repayment Report</button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="space-y-8 block">
+            <!-- Dashboard Summary Cards -->
+            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="glass-card p-6 rounded-xl border border-gray-200/50 shadow-sm flex flex-col relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Total Fund Collected</h3>
+                    <span class="text-3xl font-bold text-gray-900" id="totalCollected">₹0</span>
+                </div>
+                
+                <div class="glass-card p-6 rounded-xl border border-gray-200/50 shadow-sm flex flex-col relative overflow-hidden group bg-gradient-to-br from-green-50 to-white">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-green-600 group-hover:opacity-20 transition-opacity">
+                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">Available Balance</h3>
+                    <span class="text-3xl font-bold text-green-600" id="availableBalance">₹0</span>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl border border-gray-200/50 shadow-sm flex flex-col relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-orange-600 group-hover:opacity-20 transition-opacity">
+                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Total Lent Amount</h3>
+                    <span class="text-3xl font-bold text-orange-500" id="totalLent">₹0</span>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl border border-gray-200/50 shadow-sm flex flex-col relative overflow-hidden group bg-gradient-to-br from-indigo-50 to-white">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-indigo-600 group-hover:opacity-20 transition-opacity">
+                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-indigo-700 uppercase tracking-wider mb-2">Total Interest Earned</h3>
+                    <span class="text-3xl font-bold text-indigo-600" id="totalInterest">₹0</span>
+                </div>
+            </section>
+
+            <!-- Borrowing Portal (Centered on Dashboard) -->
+            <div class="max-w-3xl mx-auto">
+                <section class="glass-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="bg-white px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-800">Issue Loan</h2>
+                    </div>
+                    <div class="p-6">
+                        <form id="borrowForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="borrower" class="block text-sm font-medium text-gray-700 mb-1">Select Member</label>
+                                    <select id="borrower" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700 bg-white">
+                                        <option value="" disabled selected>Choose a member...</option>
+                                        <!-- Options injected via JS -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="borrowAmount" class="block text-sm font-medium text-gray-700 mb-1">Borrow Amount (₹)</label>
+                                    <input type="number" id="borrowAmount" min="100" step="100" required placeholder="e.g., 2000" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label for="borrowDate" class="block text-sm font-medium text-gray-700 mb-1">Date Issued</label>
+                                    <input type="date" id="borrowDate" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700">
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4">
+                                <div class="bg-indigo-50 text-indigo-800 text-sm p-4 rounded-lg flex items-start gap-3 mb-4 border border-indigo-100">
+                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <p>Flat <strong>10% interest</strong> will be added. Must be repaid within <strong>3 months</strong>.</p>
+                                </div>
+                                <button type="submit" class="w-full bg-primary hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2">
+                                    Issue Loan
+                                </button>
+                                <div id="borrowError" class="text-red-500 text-sm mt-3 hidden text-center font-medium"></div>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Monthly Report View -->
+        <div id="view-monthly" class="hidden space-y-6 max-w-4xl mx-auto">
+            <section class="glass-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-white px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <h2 class="text-lg font-bold text-gray-800">Monthly Contributions Report</h2>
+                    <input type="month" id="contributionMonth" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700 bg-gray-50">
+                </div>
+                <div class="overflow-x-auto p-6">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                                <th class="pb-3 pl-2 w-1/2">Member Name</th>
+                                <th class="pb-3 w-1/4 text-center">Status</th>
+                                <th class="pb-3 w-1/4 text-right pr-4">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersList" class="divide-y divide-gray-50">
+                            <!-- Members injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Borrow Report View -->
+        <div id="view-borrow" class="hidden space-y-6">
+            <section class="glass-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">Borrower Report</h2>
+                    <div class="flex gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Closed
+                        </span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto p-6">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                                <th class="pb-3 pl-2">Borrower</th>
+                                <th class="pb-3">Amount</th>
+                                <th class="pb-3">Interest (10%)</th>
+                                <th class="pb-3">Remaining Due</th>
+                                <th class="pb-3">Dates</th>
+                                <th class="pb-3 text-right pr-2">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loansTableBody" class="divide-y divide-gray-50">
+                            <!-- Loans injected via JS -->
+                        </tbody>
+                    </table>
+                    <div id="noLoansMessage" class="hidden flex flex-col items-center justify-center py-12 text-gray-400">
+                        <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <p>No loans issued yet.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Repayment Report View -->
+        <div id="view-repayments" class="hidden space-y-6">
+            <section class="glass-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">Repayment Installments Report</h2>
+                </div>
+                <div class="overflow-x-auto p-6">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                                <th class="pb-3 pl-2">Date</th>
+                                <th class="pb-3">Borrower</th>
+                                <th class="pb-3">Loan Issued</th>
+                                <th class="pb-3 text-right pr-2">Amount Repaid</th>
+                            </tr>
+                        </thead>
+                        <tbody id="repaymentsTableBody" class="divide-y divide-gray-50">
+                            <!-- Repayments injected via JS -->
+                        </tbody>
+                    </table>
+                    <div id="noRepaymentsMessage" class="hidden flex flex-col items-center justify-center py-12 text-gray-400">
+                        <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                        <p>No repayments made yet.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
