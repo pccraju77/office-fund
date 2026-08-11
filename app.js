@@ -155,12 +155,12 @@ const initializeApp = async () => {
     
     // RBAC Control: Hide elements if viewer
     if (currentRole === 'viewer') {
-        document.getElementById('adminDashboardRow').classList.add('hidden');
+        document.getElementById('issueLoanSection').classList.add('hidden');
         document.getElementById('clearDataBtn').classList.add('hidden');
         els.addMemberSection.classList.add('hidden');
         document.getElementById('remindBtn').classList.add('hidden');
     } else {
-        document.getElementById('adminDashboardRow').classList.remove('hidden');
+        document.getElementById('issueLoanSection').classList.remove('hidden');
         document.getElementById('clearDataBtn').classList.remove('hidden');
         els.addMemberSection.classList.remove('hidden');
         document.getElementById('remindBtn').classList.remove('hidden');
