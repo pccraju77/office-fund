@@ -83,7 +83,7 @@ const els = {
     noRepaymentsMessage: document.getElementById('noRepaymentsMessage')
 };
 
-const AUTH_PASSWORD = "1234";
+const AUTH_PASSWORD = "2026";
 
 // Initialize Application
 const init = () => {
