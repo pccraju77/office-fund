@@ -91,6 +91,8 @@ const init = () => {
     initializeApp();
 };
 
+let currentRole = null;
+
 const checkAuth = () => {
     const loginOverlay = document.getElementById('login-overlay');
     const appContainer = document.getElementById('app-container');
@@ -98,7 +100,9 @@ const checkAuth = () => {
     const passwordInput = document.getElementById('passwordInput');
     const loginError = document.getElementById('loginError');
 
-    if (sessionStorage.getItem('officeFundAuth') === 'true') {
+    const savedRole = sessionStorage.getItem('officeFundRole');
+    if (savedRole === 'admin' || savedRole === 'viewer') {
+        currentRole = savedRole;
         loginOverlay.classList.add('hidden');
         appContainer.classList.remove('hidden');
         return true;
@@ -107,7 +111,8 @@ const checkAuth = () => {
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         if (passwordInput.value === AUTH_PASSWORD) {
-            sessionStorage.setItem('officeFundAuth', 'true');
+            sessionStorage.setItem('officeFundRole', 'admin');
+            currentRole = 'admin';
             loginOverlay.classList.add('hidden');
             appContainer.classList.remove('hidden');
             initializeApp();
@@ -120,6 +125,14 @@ const checkAuth = () => {
     return false;
 };
 
+window.loginAsViewer = () => {
+    sessionStorage.setItem('officeFundRole', 'viewer');
+    currentRole = 'viewer';
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('app-container').classList.remove('hidden');
+    initializeApp();
+};
+
 const initializeApp = async () => {
     // 1. Initial UI Setup
     const today = new Date();
@@ -130,6 +143,15 @@ const initializeApp = async () => {
     els.borrowDate.value = `${yyyy}-${mm}-${dd}`;
     
     populateBorrowerSelect();
+    
+    // RBAC Control: Hide elements if viewer
+    if (currentRole === 'viewer') {
+        document.getElementById('issueLoanSection').classList.add('hidden');
+        document.getElementById('clearDataBtn').classList.add('hidden');
+    } else {
+        document.getElementById('issueLoanSection').classList.remove('hidden');
+        document.getElementById('clearDataBtn').classList.remove('hidden');
+    }
     
     // Render immediately with local cache
     renderAll();
@@ -259,7 +281,7 @@ const renderContributionList = () => {
                 <span class="font-medium ${isPaid ? 'text-gray-900' : 'text-gray-600'}">${member}</span>
             </td>
             <td class="py-3 whitespace-nowrap text-center">
-                <input type="checkbox" class="member-checkbox mx-auto" data-member="${member}" ${isPaid ? 'checked' : ''}>
+                <input type="checkbox" class="member-checkbox mx-auto" data-member="${member}" ${isPaid ? 'checked' : ''} ${currentRole === 'viewer' ? 'disabled' : ''}>
             </td>
             <td class="py-3 whitespace-nowrap text-right pr-4">
                 <span class="font-bold ${isPaid ? 'text-green-600' : 'text-gray-400'}">
@@ -401,12 +423,11 @@ const renderLoansTable = () => {
                     <div>Out: ${issueD}</div>
                     <div>Due: ${deadD}</div>
                 </td>
-                <td class="py-3 pr-2 text-right whitespace-nowrap">
-                    ${isActive ? 
-                        `<button onclick="repayInstallment('${loan.id}')" class="bg-white border border-green-200 text-green-700 hover:bg-green-50 px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-green-500/50">Pay</button>` 
-                        : 
-                        `<span class="text-xs font-semibold text-gray-400 uppercase">Settled</span>`
-                    }
+                <td class="py-3 pr-2 text-right whitespace-nowrap flex justify-end gap-2 items-center">
+                    ${currentRole === 'admin' && isActive ? `<button onclick="repayInstallment('${loan.id}')" class="bg-white border border-green-200 text-green-700 hover:bg-green-50 px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-green-500/50">Pay</button>` : ''}
+                    ${currentRole === 'admin' ? `<button onclick="deleteLoan('${loan.id}')" class="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 p-1.5 rounded-md transition-colors" title="Delete Loan"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : ''}
+                    ${currentRole === 'viewer' && isActive ? `<span class="text-xs font-semibold text-gray-400 uppercase">Active</span>` : ''}
+                    ${!isActive ? `<span class="text-xs font-semibold text-gray-400 uppercase">Settled</span>` : ''}
                 </td>
             `;
             els.loansTableBody.appendChild(tr);
@@ -454,6 +475,15 @@ window.repayInstallment = (id) => {
     renderRepaymentReport();
 };
 
+window.deleteLoan = (id) => {
+    if (confirm("Are you sure you want to permanently delete this loan? This will revert all associated balances and erase its repayments.")) {
+        appData.loans = appData.loans.filter(l => l.id !== id);
+        saveData();
+        renderLoansTable();
+        renderRepaymentReport();
+    }
+};
+
 const renderRepaymentReport = () => {
     els.repaymentsTableBody.innerHTML = '';
     
@@ -494,7 +524,8 @@ const renderRepaymentReport = () => {
 };
 
 window.lockApp = () => {
-    sessionStorage.removeItem('officeFundAuth');
+    sessionStorage.removeItem('officeFundRole');
+    currentRole = null;
     document.getElementById('login-overlay').classList.remove('hidden');
     document.getElementById('app-container').classList.add('hidden');
     document.getElementById('passwordInput').value = '';
