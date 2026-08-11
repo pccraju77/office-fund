@@ -433,15 +433,9 @@ window.sendReminders = () => {
     const subject = encodeURIComponent(`Reminder: Monthly Contribution Due - ${month}`);
     const body = encodeURIComponent(`Hello,\n\nThis is a friendly reminder that your monthly contribution (Rs ${CONTRIBUTION_AMOUNT}) for ${month} is currently due.\n\nPlease complete your payment at your earliest convenience.\n\nThank you.`);
     
-    const mailtoLink = `mailto:?bcc=${bccList}&subject=${subject}&body=${body}`;
-    
-    // Some browsers block location.href for mailto, use a temporary link element to trigger it
-    const link = document.createElement('a');
-    link.href = mailtoLink;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Open directly in Gmail (web) instead of relying on desktop mail clients
+    const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&bcc=${bccList}&su=${subject}&body=${body}`;
+    window.open(gmailLink, '_blank');
 };
 
 const getAvailableBalance = () => {
