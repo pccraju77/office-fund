@@ -624,7 +624,7 @@ window.downloadPDF = (type) => {
     
     // Add header
     doc.setFontSize(18);
-    doc.text("Office Micro-Fund", pageWidth / 2, 15, { align: 'center' });
+    doc.text("Onteq Finance Club", pageWidth / 2, 15, { align: 'center' });
     doc.setFontSize(10);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, 22, { align: 'center' });
     
