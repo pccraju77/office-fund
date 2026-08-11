@@ -148,18 +148,12 @@ const initializeApp = async () => {
     if (currentRole === 'viewer') {
         document.getElementById('issueLoanSection').classList.add('hidden');
         document.getElementById('clearDataBtn').classList.add('hidden');
-        document.getElementById('nav-dashboard').classList.add('hidden');
-        document.getElementById('nav-borrow').classList.add('hidden');
-        document.getElementById('nav-repayments').classList.add('hidden');
-        switchTab('monthly');
     } else {
         document.getElementById('issueLoanSection').classList.remove('hidden');
         document.getElementById('clearDataBtn').classList.remove('hidden');
-        document.getElementById('nav-dashboard').classList.remove('hidden');
-        document.getElementById('nav-borrow').classList.remove('hidden');
-        document.getElementById('nav-repayments').classList.remove('hidden');
-        switchTab('dashboard');
     }
+    
+    switchTab('dashboard');
     
     // Render immediately with local cache
     renderAll();
