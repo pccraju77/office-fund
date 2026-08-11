@@ -534,9 +534,25 @@ window.lockApp = () => {
     document.getElementById('loginError').classList.add('hidden');
 };
 
-window.clearCache = () => {
-    if (confirm("Are you sure you want to clear all local data? Cloud data will NOT be deleted, but your local cache will reset.")) {
-        localStorage.removeItem('officeFundData');
+window.clearCache = async () => {
+    if (confirm("WARNING: Are you sure you want to PERMANENTLY DELETE ALL DATA? This will wipe the cloud database and cannot be undone.")) {
+        appData = getInitialData();
+        localStorage.setItem('officeFundData', JSON.stringify(appData));
+        
+        try {
+            isSaving = true;
+            await fetch(API_URL, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': API_KEY
+                },
+                body: JSON.stringify(appData)
+            });
+        } catch (e) {
+            console.error("Failed to clear cloud", e);
+        }
+        
         location.reload();
     }
 };
