@@ -143,47 +143,76 @@
                 </div>
             </section>
 
-            <!-- Borrowing Portal (Centered on Dashboard) -->
-            <div id="issueLoanSection" class="max-w-3xl mx-auto">
-                <section class="glass-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="bg-white px-6 py-4 border-b border-gray-100">
-                        <h2 class="text-lg font-bold text-gray-800">Issue Loan</h2>
-                    </div>
-                    <div class="p-6">
-                        <form id="borrowForm" class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="borrower" class="block text-sm font-medium text-gray-700 mb-1">Select Member</label>
-                                    <select id="borrower" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700 bg-white">
-                                        <option value="" disabled selected>Choose a member...</option>
-                                        <!-- Options injected via JS -->
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="borrowAmount" class="block text-sm font-medium text-gray-700 mb-1">Borrow Amount (₹)</label>
-                                    <input type="number" id="borrowAmount" min="100" step="100" required placeholder="e.g., 2000" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label for="borrowDate" class="block text-sm font-medium text-gray-700 mb-1">Date Issued</label>
-                                    <input type="date" id="borrowDate" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700">
-                                </div>
+                <!-- Admin Actions Row -->
+                <div id="adminDashboardRow" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Borrowing Portal -->
+                    <div id="issueLoanSection" class="lg:col-span-2">
+                        <section class="glass-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
+                            <div class="bg-white px-6 py-4 border-b border-gray-100">
+                                <h2 class="text-lg font-bold text-gray-800">Issue Loan</h2>
                             </div>
-                            
-                            <div class="pt-4">
-                                <div class="bg-indigo-50 text-indigo-800 text-sm p-4 rounded-lg flex items-start gap-3 mb-4 border border-indigo-100">
-                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <p>Flat <strong>10% interest</strong> will be added. Must be repaid within <strong>3 months</strong>.</p>
-                                </div>
-                                <button type="submit" class="w-full bg-primary hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2">
-                                    Issue Loan
-                                </button>
-                                <div id="borrowError" class="text-red-500 text-sm mt-3 hidden text-center font-medium"></div>
+                            <div class="p-6">
+                                <form id="borrowForm" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="borrower" class="block text-sm font-medium text-gray-700 mb-1">Select Member</label>
+                                            <select id="borrower" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700 bg-white">
+                                                <option value="" disabled selected>Choose a member...</option>
+                                                <!-- Options injected via JS -->
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="borrowAmount" class="block text-sm font-medium text-gray-700 mb-1">Borrow Amount (₹)</label>
+                                            <input type="number" id="borrowAmount" min="100" step="100" required placeholder="e.g., 2000" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="borrowDate" class="block text-sm font-medium text-gray-700 mb-1">Date Issued</label>
+                                            <input type="date" id="borrowDate" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="pt-4">
+                                        <div class="bg-indigo-50 text-indigo-800 text-sm p-4 rounded-lg flex items-start gap-3 mb-4 border border-indigo-100">
+                                            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <p>Flat <strong>10% interest</strong> will be added. Must be repaid within <strong>3 months</strong>.</p>
+                                        </div>
+                                        <button type="submit" class="w-full bg-primary hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2">
+                                            Issue Loan
+                                        </button>
+                                        <div id="borrowError" class="text-red-500 text-sm mt-3 hidden text-center font-medium"></div>
+                                    </div>
+                                </form>
                             </div>
-                        </form>
+                        </section>
                     </div>
-                </section>
+
+                    <!-- Guidelines Card -->
+                    <section class="glass-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden bg-gradient-to-br from-indigo-50 to-white flex flex-col h-full">
+                        <div class="bg-white/50 px-6 py-4 border-b border-indigo-100/50">
+                            <h2 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Fund Guidelines
+                            </h2>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-center">
+                            <ul class="space-y-5 text-sm text-gray-600">
+                                <li class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5"><span class="font-bold text-xs">1</span></div>
+                                    <div><strong class="text-gray-800 block mb-0.5">Monthly Contribution</strong> All members must contribute ₹500 every month.</div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5"><span class="font-bold text-xs">2</span></div>
+                                    <div><strong class="text-gray-800 block mb-0.5">Loan Interest</strong> A flat 10% interest rate is applied to the principal of all loans.</div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5"><span class="font-bold text-xs">3</span></div>
+                                    <div><strong class="text-gray-800 block mb-0.5">Repayment Term</strong> Loans must be fully settled within 3 months of issuance.</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
             </div>
-        </div>
 
         <!-- Monthly Report View -->
         <div id="view-monthly" class="hidden space-y-6 max-w-4xl mx-auto">
