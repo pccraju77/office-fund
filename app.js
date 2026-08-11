@@ -8,34 +8,60 @@ const MEMBERS = [
 const CONTRIBUTION_AMOUNT = 500;
 const INTEREST_RATE = 0.10; // 10%
 
+// Cloud Database Configuration (JSONBin.io)
+const BIN_ID = "6a7aa8aaf5f4af5e29057878";
+const API_KEY = "$2a$10$lAGnRD1ydBudazYd82Xn.e5CdaPnBKCWlZ3.Ld.2yXZC8tjX6ZW/m";
+const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
 // Initial Data Structure
 const getInitialData = () => ({
     contributions: {}, // Format: { "YYYY-MM": ["Member1", "Member2"] }
     loans: [] // Format: { id, borrower, amount, interest, totalDue, issueDate, deadline, status: 'active'|'closed', repayments: [{id, date, amount}] }
 });
 
-// Load data from localStorage
+// Load local cache immediately
 let appData = JSON.parse(localStorage.getItem('officeFundData')) || getInitialData();
 
-// Backwards compatibility for older data without repayments array
+// Backwards compatibility for older data
 appData.loans.forEach(loan => {
     if (!loan.repayments) {
         loan.repayments = [];
-        // If it was already closed before we added this feature, create a dummy repayment so the math works out
         if (loan.status === 'closed') {
             loan.repayments.push({
                 id: 'legacy-' + loan.id,
-                date: loan.deadline, // just use deadline as date
+                date: loan.deadline,
                 amount: loan.totalDue
             });
         }
     }
 });
 
-// Save data to localStorage
+let isSaving = false;
+
+// Save data to Cloud and LocalStorage
 const saveData = () => {
+    // 1. Save to local storage for instant UI updates
     localStorage.setItem('officeFundData', JSON.stringify(appData));
     updateDashboard();
+    
+    // 2. Sync to cloud in background
+    isSaving = true;
+    fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+        },
+        body: JSON.stringify(appData)
+    })
+    .then(() => {
+        isSaving = false;
+    })
+    .catch(err => {
+        console.error("Cloud sync failed", err);
+        isSaving = false;
+        alert("Warning: Failed to save to cloud. Check your connection.");
+    });
 };
 
 // DOM Elements
@@ -94,26 +120,77 @@ const checkAuth = () => {
     return false;
 };
 
-const initializeApp = () => {
-    // Set current month for contribution
+const initializeApp = async () => {
+    // 1. Initial UI Setup
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     els.contributionMonth.value = `${yyyy}-${mm}`;
-    
-    // Set today for borrow date
     const dd = String(today.getDate()).padStart(2, '0');
     els.borrowDate.value = `${yyyy}-${mm}-${dd}`;
-
+    
     populateBorrowerSelect();
+    
+    // Render immediately with local cache
+    renderAll();
+
+    // 2. Fetch from Cloud
+    await fetchAndSyncCloud();
+
+    // 3. Setup Auto-polling for Multi-User Real-time Sync
+    // Polls every 10 seconds, but ONLY if the browser tab is actively visible to save API limits
+    setInterval(() => {
+        if (document.visibilityState === 'visible' && !isSaving) {
+            fetchAndSyncCloud();
+        }
+    }, 10000);
+
+    // Event Listeners
+    if (!els.contributionMonth.dataset.listenerAdded) {
+        els.contributionMonth.addEventListener('change', renderContributionList);
+        els.borrowForm.addEventListener('submit', handleBorrow);
+        els.contributionMonth.dataset.listenerAdded = 'true';
+    }
+};
+
+const fetchAndSyncCloud = async () => {
+    try {
+        const res = await fetch(API_URL + '/latest', { 
+            headers: { 'X-Master-Key': API_KEY } 
+        });
+        const json = await res.json();
+        
+        if (json.record) {
+            const cloudData = json.record;
+            
+            // First time migration: if cloud is empty but local has data, upload local to cloud
+            const isCloudEmpty = Object.keys(cloudData.contributions || {}).length === 0 && (cloudData.loans || []).length === 0;
+            const hasLocalData = Object.keys(appData.contributions || {}).length > 0 || (appData.loans || []).length > 0;
+            
+            if (isCloudEmpty && hasLocalData) {
+                console.log("Migrating local data to cloud...");
+                saveData();
+                return;
+            }
+            
+            // If cloud data is different from local data (another user updated it)
+            if (JSON.stringify(cloudData) !== JSON.stringify(appData)) {
+                console.log("Cloud update detected, syncing UI...");
+                appData = cloudData;
+                localStorage.setItem('officeFundData', JSON.stringify(appData));
+                renderAll();
+            }
+        }
+    } catch (e) {
+        console.error("Failed to fetch from cloud", e);
+    }
+};
+
+const renderAll = () => {
     renderContributionList();
     renderLoansTable();
     renderRepaymentReport();
     updateDashboard();
-
-    // Event Listeners
-    els.contributionMonth.addEventListener('change', renderContributionList);
-    els.borrowForm.addEventListener('submit', handleBorrow);
 };
 
 // Dashboard Calculations
@@ -129,20 +206,19 @@ const updateDashboard = () => {
     let totalRepayments = 0;
 
     appData.loans.forEach(loan => {
-        const repaidSoFar = loan.repayments.reduce((sum, r) => sum + r.amount, 0);
+        const repaidSoFar = (loan.repayments || []).reduce((sum, r) => sum + r.amount, 0);
         totalPrincipals += loan.amount;
         totalRepayments += repaidSoFar;
 
         if (loan.status === 'active') {
-            activeLent += loan.amount; // currently active principal lent out
+            activeLent += loan.amount;
         } else if (loan.status === 'closed') {
-            earnedInterest += loan.interest; // only count as earned when fully closed
+            earnedInterest += loan.interest;
         }
     });
 
     const availableBalance = totalContributions - totalPrincipals + totalRepayments;
 
-    // Update DOM
     els.totalCollected.textContent = `₹${totalContributions.toLocaleString()}`;
     els.availableBalance.textContent = `₹${availableBalance.toLocaleString()}`;
     els.totalLent.textContent = `₹${activeLent.toLocaleString()}`;
@@ -151,6 +227,7 @@ const updateDashboard = () => {
 
 // Populate Members Dropdown
 const populateBorrowerSelect = () => {
+    els.borrowerSelect.innerHTML = '<option value="" disabled selected>Choose a member...</option>';
     MEMBERS.forEach(member => {
         const option = document.createElement('option');
         option.value = member;
@@ -228,11 +305,10 @@ const toggleContribution = (member, month, isPaid) => {
     saveData();
 };
 
-// Calculate Available Balance Helper (for form validation)
 const getAvailableBalance = () => {
     let totalContributions = Object.values(appData.contributions).reduce((acc, monthArray) => acc + (monthArray.length * CONTRIBUTION_AMOUNT), 0);
     let totalPrincipals = appData.loans.reduce((acc, l) => acc + l.amount, 0);
-    let totalRepayments = appData.loans.reduce((acc, l) => acc + l.repayments.reduce((sum, r) => sum + r.amount, 0), 0);
+    let totalRepayments = appData.loans.reduce((acc, l) => acc + (l.repayments||[]).reduce((sum, r) => sum + r.amount, 0), 0);
     return totalContributions - totalPrincipals + totalRepayments;
 };
 
@@ -256,12 +332,11 @@ const handleBorrow = (e) => {
         return;
     }
 
-    // Calculate Interest and Deadline
     const interest = amount * INTEREST_RATE;
     const totalDue = amount + interest;
     
     const dateObj = new Date(issueDate);
-    dateObj.setMonth(dateObj.getMonth() + 3); // 3 months deadline
+    dateObj.setMonth(dateObj.getMonth() + 3);
     const deadlineStr = dateObj.toISOString().split('T')[0];
 
     const newLoan = {
@@ -279,9 +354,8 @@ const handleBorrow = (e) => {
     appData.loans.unshift(newLoan);
     saveData();
     
-    // Reset Form
     els.borrowForm.reset();
-    els.borrowDate.value = issueDate; // Keep date
+    els.borrowDate.value = issueDate; 
     
     renderLoansTable();
 };
@@ -301,7 +375,7 @@ const renderLoansTable = () => {
         els.noLoansMessage.classList.add('hidden');
         
         appData.loans.forEach(loan => {
-            const repaidSoFar = loan.repayments.reduce((sum, r) => sum + r.amount, 0);
+            const repaidSoFar = (loan.repayments||[]).reduce((sum, r) => sum + r.amount, 0);
             const remainingDue = loan.totalDue - repaidSoFar;
             
             const tr = document.createElement('tr');
@@ -310,7 +384,6 @@ const renderLoansTable = () => {
             const isActive = loan.status === 'active';
             const statusDot = isActive ? 'bg-green-500' : 'bg-gray-400';
             
-            // Format Dates
             const issueD = new Date(loan.issueDate).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: '2-digit'});
             const deadD = new Date(loan.deadline).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: '2-digit'});
 
@@ -341,31 +414,26 @@ const renderLoansTable = () => {
     }
 };
 
-// Global function for Installment Repayment
 window.repayInstallment = (id) => {
     const loan = appData.loans.find(l => l.id === id);
     if (!loan || loan.status !== 'active') return;
 
-    const repaidSoFar = loan.repayments.reduce((sum, r) => sum + r.amount, 0);
+    const repaidSoFar = (loan.repayments||[]).reduce((sum, r) => sum + r.amount, 0);
     const remainingDue = loan.totalDue - repaidSoFar;
 
     const input = prompt(`Repaying loan for ${loan.borrower}.\nRemaining Due: ₹${remainingDue.toLocaleString()}\nEnter amount to repay today:`, remainingDue);
-    
-    if (input === null) return; // User cancelled
+    if (input === null) return;
     
     const amount = parseFloat(input);
-    
     if (isNaN(amount) || amount <= 0) {
         alert("Please enter a valid positive amount.");
         return;
     }
-    
     if (amount > remainingDue) {
         alert(`You cannot repay more than the remaining due (₹${remainingDue.toLocaleString()}).`);
         return;
     }
 
-    // Add repayment record
     const today = new Date().toISOString().split('T')[0];
     loan.repayments.push({
         id: Date.now().toString(),
@@ -373,7 +441,6 @@ window.repayInstallment = (id) => {
         amount: amount
     });
 
-    // Check if fully paid
     const newRepaidSoFar = loan.repayments.reduce((sum, r) => sum + r.amount, 0);
     if (newRepaidSoFar >= loan.totalDue) {
         loan.status = 'closed';
@@ -387,14 +454,12 @@ window.repayInstallment = (id) => {
     renderRepaymentReport();
 };
 
-// Render Repayment Report
 const renderRepaymentReport = () => {
     els.repaymentsTableBody.innerHTML = '';
     
-    // Extract all repayments into a flat array with loan context
     let allRepayments = [];
     appData.loans.forEach(loan => {
-        loan.repayments.forEach(rep => {
+        (loan.repayments||[]).forEach(rep => {
             allRepayments.push({
                 ...rep,
                 borrower: loan.borrower,
@@ -403,7 +468,6 @@ const renderRepaymentReport = () => {
         });
     });
 
-    // Sort by date descending (newest first)
     allRepayments.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     if (allRepayments.length === 0) {
@@ -429,7 +493,6 @@ const renderRepaymentReport = () => {
     }
 };
 
-// Global function to lock the app
 window.lockApp = () => {
     sessionStorage.removeItem('officeFundAuth');
     document.getElementById('login-overlay').classList.remove('hidden');
@@ -438,34 +501,23 @@ window.lockApp = () => {
     document.getElementById('loginError').classList.add('hidden');
 };
 
-// Global function to clear data cache
 window.clearCache = () => {
-    if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
+    if (confirm("Are you sure you want to clear all local data? Cloud data will NOT be deleted, but your local cache will reset.")) {
         localStorage.removeItem('officeFundData');
         location.reload();
     }
 };
 
-// Global function for Tab Switching
 window.switchTab = (tabName) => {
-    // Hide all views
-    document.getElementById('view-dashboard').classList.remove('block');
-    document.getElementById('view-dashboard').classList.add('hidden');
-    document.getElementById('view-monthly').classList.remove('block');
-    document.getElementById('view-monthly').classList.add('hidden');
-    document.getElementById('view-borrow').classList.remove('block');
-    document.getElementById('view-borrow').classList.add('hidden');
-    document.getElementById('view-repayments').classList.remove('block');
-    document.getElementById('view-repayments').classList.add('hidden');
+    ['dashboard', 'monthly', 'borrow', 'repayments'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        document.getElementById(`view-${t}`).classList.remove('block');
+        document.getElementById(`nav-${t}`).classList.remove('active');
+    });
     
-    // Show selected view
     document.getElementById(`view-${tabName}`).classList.remove('hidden');
     document.getElementById(`view-${tabName}`).classList.add('block');
-    
-    // Update active nav button
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`nav-${tabName}`).classList.add('active');
 };
 
-// Run app
 document.addEventListener('DOMContentLoaded', init);
