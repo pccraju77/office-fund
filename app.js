@@ -1,7 +1,7 @@
 // app.js
 
 // Fixed list of 10 office members
-const MEMBERS = [
+const DEFAULT_MEMBERS = [
     "Renny", "Sheeja", "Libin", "rajesh", "avinash",
     "Makesh 1", "Mahesh 2", "Vignesh", "Shreenivas", "Sarath"
 ];
@@ -15,6 +15,7 @@ const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 // Initial Data Structure
 const getInitialData = () => ({
+    members: [...DEFAULT_MEMBERS],
     contributions: {}, // Format: { "YYYY-MM": ["Member1", "Member2"] }
     loans: [] // Format: { id, borrower, amount, interest, totalDue, issueDate, deadline, status: 'active'|'closed', repayments: [{id, date, amount}] }
 });
@@ -23,6 +24,10 @@ const getInitialData = () => ({
 let appData = JSON.parse(localStorage.getItem('officeFundData')) || getInitialData();
 
 // Backwards compatibility for older data
+if (!appData.members) {
+    appData.members = [...DEFAULT_MEMBERS];
+}
+
 appData.loans.forEach(loan => {
     if (!loan.repayments) {
         loan.repayments = [];
@@ -80,7 +85,10 @@ const els = {
     loansTableBody: document.getElementById('loansTableBody'),
     noLoansMessage: document.getElementById('noLoansMessage'),
     repaymentsTableBody: document.getElementById('repaymentsTableBody'),
-    noRepaymentsMessage: document.getElementById('noRepaymentsMessage')
+    noRepaymentsMessage: document.getElementById('noRepaymentsMessage'),
+    addMemberSection: document.getElementById('addMemberSection'),
+    addMemberForm: document.getElementById('addMemberForm'),
+    newMemberName: document.getElementById('newMemberName')
 };
 
 const AUTH_PASSWORD = "2026";
@@ -148,9 +156,11 @@ const initializeApp = async () => {
     if (currentRole === 'viewer') {
         document.getElementById('issueLoanSection').classList.add('hidden');
         document.getElementById('clearDataBtn').classList.add('hidden');
+        els.addMemberSection.classList.add('hidden');
     } else {
         document.getElementById('issueLoanSection').classList.remove('hidden');
         document.getElementById('clearDataBtn').classList.remove('hidden');
+        els.addMemberSection.classList.remove('hidden');
     }
     
     switchTab('dashboard');
@@ -173,6 +183,7 @@ const initializeApp = async () => {
     if (!els.contributionMonth.dataset.listenerAdded) {
         els.contributionMonth.addEventListener('change', renderContributionList);
         els.borrowForm.addEventListener('submit', handleBorrow);
+        if(els.addMemberForm) els.addMemberForm.addEventListener('submit', handleAddMember);
         els.contributionMonth.dataset.listenerAdded = 'true';
     }
 };
@@ -252,7 +263,7 @@ const updateDashboard = () => {
 // Populate Members Dropdown
 const populateBorrowerSelect = () => {
     els.borrowerSelect.innerHTML = '<option value="" disabled selected>Choose a member...</option>';
-    MEMBERS.forEach(member => {
+    appData.members.forEach(member => {
         const option = document.createElement('option');
         option.value = member;
         option.textContent = member;
@@ -272,14 +283,15 @@ const renderContributionList = () => {
     const paidMembers = appData.contributions[selectedMonth];
     els.membersList.innerHTML = '';
 
-    MEMBERS.forEach(member => {
+    appData.members.forEach(member => {
         const isPaid = paidMembers.includes(member);
         
         const tr = document.createElement('tr');
         tr.className = 'text-sm border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors';
         
         tr.innerHTML = `
-            <td class="py-3 pl-2 whitespace-nowrap">
+            <td class="py-3 pl-2 whitespace-nowrap flex items-center gap-2">
+                ${currentRole === 'admin' ? `<button onclick="removeMember('${member}')" class="text-red-400 hover:text-red-600 focus:outline-none" title="Remove Member"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>` : ''}
                 <span class="font-medium ${isPaid ? 'text-gray-900' : 'text-gray-600'}">${member}</span>
             </td>
             <td class="py-3 whitespace-nowrap text-center">
@@ -327,6 +339,32 @@ const toggleContribution = (member, month, isPaid) => {
     }
     
     saveData();
+};
+
+const handleAddMember = (e) => {
+    e.preventDefault();
+    const name = els.newMemberName.value.trim();
+    if (!name) return;
+    
+    if (appData.members.includes(name)) {
+        alert("Member already exists in the active list!");
+        return;
+    }
+    
+    appData.members.push(name);
+    saveData();
+    els.newMemberName.value = '';
+    renderContributionList();
+    populateBorrowerSelect();
+};
+
+window.removeMember = (member) => {
+    if (confirm(`Are you sure you want to remove ${member} from the active list? Their historical data will not be deleted.`)) {
+        appData.members = appData.members.filter(m => m !== member);
+        saveData();
+        renderContributionList();
+        populateBorrowerSelect();
+    }
 };
 
 const getAvailableBalance = () => {
