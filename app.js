@@ -429,6 +429,15 @@ const renderRepaymentReport = () => {
     }
 };
 
+// Global function to lock the app
+window.lockApp = () => {
+    sessionStorage.removeItem('officeFundAuth');
+    document.getElementById('login-overlay').classList.remove('hidden');
+    document.getElementById('app-container').classList.add('hidden');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').classList.add('hidden');
+};
+
 // Global function to clear data cache
 window.clearCache = () => {
     if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
