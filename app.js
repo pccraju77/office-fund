@@ -422,18 +422,26 @@ window.sendReminders = () => {
     
     const bccList = unpaidMembers
         .map(m => appData.memberEmails[m])
-        .filter(email => email)
+        .filter(email => email && email.trim() !== '')
         .join(',');
         
     if (!bccList) {
-        alert("None of the unpaid members have email addresses on file.");
+        alert("Please add an email address to at least one unpaid member first! Click the tiny pencil icon next to their name in the list to save their email.");
         return;
     }
     
     const subject = encodeURIComponent(`Reminder: Monthly Contribution Due - ${month}`);
     const body = encodeURIComponent(`Hello,\n\nThis is a friendly reminder that your monthly contribution (Rs ${CONTRIBUTION_AMOUNT}) for ${month} is currently due.\n\nPlease complete your payment at your earliest convenience.\n\nThank you.`);
     
-    window.location.href = `mailto:?bcc=${bccList}&subject=${subject}&body=${body}`;
+    const mailtoLink = `mailto:?bcc=${bccList}&subject=${subject}&body=${body}`;
+    
+    // Some browsers block location.href for mailto, use a temporary link element to trigger it
+    const link = document.createElement('a');
+    link.href = mailtoLink;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
 
 const getAvailableBalance = () => {
