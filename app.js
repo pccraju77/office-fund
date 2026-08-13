@@ -361,6 +361,11 @@ const toggleContribution = (member, month, isPaid) => {
     }
     
     saveData();
+
+    if (isPaid && confirm(`Share contribution receipt for ${member} to WhatsApp?`)) {
+        const msg = `💸 *Monthly Contribution*\n👤 Member: ${member}\n📅 Month: ${month}\n💵 Paid: Rs ${CONTRIBUTION_AMOUNT}`;
+        sendWhatsAppNotification(msg);
+    }
 };
 
 const handleAddMember = (e) => {
@@ -491,6 +496,11 @@ const handleBorrow = (e) => {
     els.borrowDate.value = issueDate; 
     
     renderLoansTable();
+
+    if (confirm("Loan issued successfully! Share notification to WhatsApp?")) {
+        const msg = `📢 *New Loan Issued*\n👤 Borrower: ${borrower}\n💰 Amount: Rs ${amount}\n📅 Due Date: ${new Date(deadlineStr).toLocaleDateString('en-GB')}`;
+        sendWhatsAppNotification(msg);
+    }
 };
 
 const showError = (msg) => {
@@ -574,7 +584,8 @@ window.repayInstallment = (id) => {
     });
 
     const newRepaidSoFar = loan.repayments.reduce((sum, r) => sum + r.amount, 0);
-    if (newRepaidSoFar >= loan.totalDue) {
+    const isSettled = newRepaidSoFar >= loan.totalDue;
+    if (isSettled) {
         loan.status = 'closed';
         alert(`Loan fully settled for ${loan.borrower}!`);
     } else {
@@ -584,6 +595,13 @@ window.repayInstallment = (id) => {
     saveData();
     renderLoansTable();
     renderRepaymentReport();
+
+    if (confirm("Share repayment receipt to WhatsApp?")) {
+        const remaining = loan.totalDue - newRepaidSoFar;
+        const statusMsg = isSettled ? "✅ *Loan Fully Settled!*" : "✅ *Loan Repayment*";
+        const msg = `${statusMsg}\n👤 Member: ${loan.borrower}\n💵 Paid: Rs ${amount}\n📉 Remaining Due: Rs ${remaining > 0 ? remaining : 0}`;
+        sendWhatsAppNotification(msg);
+    }
 };
 
 window.deleteLoan = (id) => {
@@ -783,6 +801,31 @@ window.downloadPDF = (type) => {
         
         doc.save(`Repayments_Report.pdf`);
     }
+};
+
+window.sendWhatsAppNotification = (message) => {
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+};
+
+window.shareDashboardToWhatsApp = () => {
+    const available = getAvailableBalance();
+    
+    let activeLent = 0;
+    appData.loans.forEach(loan => {
+        if (loan.status === 'active') {
+            activeLent += loan.amount;
+        }
+    });
+
+    let totalContributions = 0;
+    for (const month in appData.contributions) {
+        totalContributions += appData.contributions[month].length * CONTRIBUTION_AMOUNT;
+    }
+
+    const msg = `📊 *Office Fund Summary*\n💰 Total Collected: Rs ${totalContributions.toLocaleString()}\n💸 Active Lent: Rs ${activeLent.toLocaleString()}\n💵 Available Balance: Rs ${available.toLocaleString()}`;
+    sendWhatsAppNotification(msg);
 };
 
 document.addEventListener('DOMContentLoaded', init);
