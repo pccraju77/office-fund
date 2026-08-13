@@ -159,11 +159,15 @@ const initializeApp = async () => {
         document.getElementById('clearDataBtn').classList.add('hidden');
         els.addMemberSection.classList.add('hidden');
         document.getElementById('remindBtn').classList.add('hidden');
+        const shareBtn = document.getElementById('shareDashboardBtnContainer');
+        if (shareBtn) shareBtn.classList.add('hidden');
     } else {
         document.getElementById('issueLoanSection').classList.remove('hidden');
         document.getElementById('clearDataBtn').classList.remove('hidden');
         els.addMemberSection.classList.remove('hidden');
         document.getElementById('remindBtn').classList.remove('hidden');
+        const shareBtn = document.getElementById('shareDashboardBtnContainer');
+        if (shareBtn) shareBtn.classList.remove('hidden');
     }
     
     switchTab('dashboard');
